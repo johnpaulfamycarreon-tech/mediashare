@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MediaShare Pro - Community Feed</title>
+    <style>
+        :root { 
+            --primary: #3498db;
+            --admin: #e74c3c; --developer: #9b59b6;
+            --user: #e0e0e0; --bg: #121212; --white: #1e1e1e;
+            --border: #333333; --warning: #f39c12; --text-muted: #888888;
+        }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg);
+            margin: 0; padding-bottom: 50px; color: #e0e0e0; }
+        .hidden { display: none !important; }
+        nav { background: var(--white); padding: 15px 5%; display: flex; justify-content: space-between;
+            align-items: center; box-shadow: 0 2px 10px rgba(0,0,0,0.5); position: sticky; top: 0; z-index: 100; border-bottom: 1px solid var(--border);
+        }
+        nav h2 { margin: 0; color: var(--primary); font-weight: 800; letter-spacing: -0.5px; }
+        .tab-menu { display: flex; gap: 15px; }
+        .tab-btn { background: none; border: none; font-weight: bold; color: var(--text-muted);
+            padding: 8px 12px; cursor: pointer; border-radius: 6px; transition: 0.2s; }
+        .tab-btn:hover { background: #2c2c2c; color: #fff; }
+        .tab-btn.active { background: var(--primary); color: white; }
+        .container { max-width: 750px; margin: 30px auto; padding: 0 20px; }
+        .section-card { background: var(--white); border-radius: 12px; padding: 25px; margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2); border: 1px solid var(--border); }
+        .name-dev { color: var(--developer); font-weight: 700; }
+        .name-admin { color: var(--admin); font-weight: 700; }
+        .name-user { color: var(--primary); font-weight: 600; }
+        .status-badge { font-size: 0.75rem; padding: 2px 6px; border-radius: 4px; margin-left: 5px; font-weight: bold; }
+        .status-muted { background: #f39c12; color: white; }
+        .status-banned { background: #e74c3c; color: white; }
+        .action-icon { cursor: pointer; font-size: 0.9rem; margin-left: 5px; opacity: 0.6; transition: 0.2s; }
+        .action-icon:hover { opacity: 1; transform: scale(1.1); }
+        .post { background: var(--white); border-radius: 12px; padding: 20px; margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2); border: 1px solid var(--border); }
+        .post-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; border-bottom: 1px solid #2a2a2a; padding-bottom: 10px; }
+        .post-content { font-size: 1.05rem; line-height: 1.5; }
+        .post img, .chat-img { width: 100%; max-height: 400px; object-fit: cover; border-radius: 8px; margin: 15px 0; border: 1px solid #333; }
+        .comment-section { margin-top: 20px; padding: 15px; border-radius: 8px; background: #181818; border: 1px solid #2a2a2a; }
+        .comment { font-size: 0.95rem; margin: 12px 0; padding-left: 12px; border-left: 3px solid #444; }
+        .reply { font-size: 0.85rem; margin: 8px 0 8px 25px; padding-left: 12px; border-left: 2px solid #3498db; background: #222; padding: 8px; border-radius: 4px; }
+        input[type="text"], input[type="number"], input[type="password"], textarea, select { width: 100%; padding: 12px;
+            margin: 8px 0; border: 1px solid #444; border-radius: 8px; box-sizing: border-box; font-family: inherit; transition: 0.2s; background: #2a2a2a; color: #fff;
+        }
+        input:focus, textarea:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2); }
+        button { cursor: pointer; border-radius: 8px; border: none; padding: 10px 16px; font-weight: 600; transition: 0.2s; font-family: inherit; }
+        .btn-primary { background: var(--primary); color: white; width: 100%; }
+        .btn-danger { background: #ffeaa7; color: #d63031; font-size: 0.8rem; padding: 6px 10px; border: 1px solid #fab1a0; }
+        .btn-warn { background: #f39c12; color: white; font-size: 0.8rem; padding: 6px 10px; }
+        .btn-success { background: #2ecc71; color: white; font-size: 0.8rem; padding: 6px 10px; }
+        .btn-report { background: none; border: 1px solid #555; color: var(--text-muted); font-size: 0.75rem; padding: 4px 8px; }
+        .reply-link { color: var(--primary); font-size: 0.8rem; cursor: pointer; font-weight: 600; margin-left: 10px; }
+        .show-more-btn { background: none; border: none; color: var(--primary); font-size: 0.85rem; cursor: pointer; margin-top: 5px; padding: 0; }
+        .show-more-btn:hover { text-decoration: underline; }
+        .pwd-container { position: relative; width: 100%; }
+        .pwd-toggle { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--text-muted); padding: 0; cursor: pointer; font-size: 1.1rem; }
+        .reaction-bar { display: flex; gap: 10px; align-items: center; margin-top: 8px; font-size: 0.85rem; color: var(--text-muted); }
+        .react-btn { background: none; border: 1px solid #333; color: var(--text-muted); border-radius: 12px; padding: 4px 10px; cursor: pointer; font-size: 0.8rem; display: flex; align-items: center; gap: 4px; transition: 0.2s;}
+        .react-btn.active-like { background: rgba(46, 204, 113, 0.2); color: #2ecc71; border-color: #2ecc71; }
+        .react-btn.active-dislike { background: rgba(231, 76, 60, 0.2); color: #e74c3c; border-color: #e74c3c; }
+        .sort-select { width: auto; padding: 6px 10px; font-size: 0.8rem; border-radius: 6px; margin-bottom: 10px; }
+        #mod-log { background: #0a0a0a; color: #44bd32; font-family: 'Courier New', monospace; padding: 15px; border-radius: 8px; height: 150px; overflow-y: auto; line-height: 1.5; font-size: 0.9rem; border: 1px solid #333;}
+        .chat-box { border: 1px solid var(--border); border-radius: 8px; height: 300px; overflow-y: auto; padding: 15px; background: #181818; margin-bottom: 10px; }
+        .chat-msg { margin-bottom: 10px; padding: 8px 12px; border-radius: 15px; max-width: 80%; clear: both; }
+        .msg-mine { background: var(--primary); color: white; float: right; border-bottom-right-radius: 2px; }
+        .msg-theirs { background: #2a2a2a; color: #e0e0e0; float: left; border-bottom-left-radius: 2px; border: 1px solid #333; }
+        .data-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.9rem; color: #e0e0e0;}
+        .data-table th, .data-table td { padding: 10px; text-align: left; border-bottom: 1px solid #333; }
+        .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); backdrop-filter: blur(5px); display: flex; justify-content: center; align-items: center; z-index: 1000; }
+        .modal-card { background: var(--white); padding: 30px; border-radius: 16px; width: 340px; box-shadow: 0 10px 40px rgba(0,0,0,0.5); max-height: 80vh; overflow-y: auto; border: 1px solid #333;}
+        .modal-card.wide { width: 500px; }
+    </style>
+</head>
+<body>
+    <nav>
+        <h2>MediaShare Pro</h2>
+        <div id="tab-controls" class="tab-menu hidden">
+            <button class="tab-btn active" onclick="switchTab('feed')">Feed</button>
+            <button class="tab-btn" onclick="switchTab('chat')">Chat</button>
+            <button class="tab-btn hidden" id="tab-mod" onclick="switchTab('mod')">Moderation</button>
+            <button class="tab-btn hidden" id="tab-dev" onclick="switchTab('dev')">Dev Panel</button>
+        </div>
+        <div id="nav-controls">
+            <button onclick="showAuth('login')" style="background: none; border: 1px solid var(--primary); color: var(--primary);">Login</button>
+            <button onclick="showAuth('register')" class="btn-primary" style="width: auto; margin-left: 10px;">Register</button>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div id="tab-content-feed">
+            <div id="creator-zone" class="section-card hidden">
+                <h3 style="margin-top:0;">Create Post</h3>
+                <textarea id="post-text" rows="3" placeholder="What's on your mind?"></textarea>
+                <input type="text" id="post-img" placeholder="Optional: Image URL">
+                <label style="font-size: 0.9rem; display: flex; align-items: center; gap: 8px; margin: 10px 0; color: var(--text-muted);">
+                    <input type="checkbox" id="post-excl" style="width: auto;"> Members Only Content
+                </label>
+                <button class="btn-primary" onclick="submitPost()">Submit Post</button>
+            </div>
+            <div id="feed"></div>
+        </div>
+
+        <div id="tab-content-chat" class="hidden">
+            <div class="section-card">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <h3 style="margin-top:0;">Direct Messages</h3>
+                    <button id="block-btn" class="btn-danger hidden" onclick="toggleBlockUser()" style="width:auto;">Block User</button>
+                </div>
+                <select id="chat-user-select" onchange="renderChat()">
+                    <option value="">Select a user...</option>
+                </select>
+                <div class="chat-box" id="chat-messages">
+                    <p style="text-align:center; color:#666; margin-top: 40%;">Select a user to start chatting.</p>
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 10px;">
+                    <input type="text" id="chat-img" placeholder="Optional: Image URL">
+                    <div style="display:flex; gap:10px;">
+                        <input type="text" id="chat-input" placeholder="Type a message..." onkeypress="if(event.key === 'Enter') sendChatMessage()">
+                        <button class="btn-primary" style="width: auto;" onclick="sendChatMessage()">Send</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="tab-content-mod" class="hidden">
+            <div class="section-card">
+                <h3 style="color: var(--admin); margin-top:0;">⚙️ Global Cooldowns</h3>
+                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px;">
+                    <div><label style="font-size:0.8rem;">Post (s)</label><input type="number" id="setting-cooldown" min="0"></div>
+                    <div><label style="font-size:0.8rem;">Reply (s)</label><input type="number" id="setting-reply-cooldown" min="0"></div>
+                    <div><label style="font-size:0.8rem;">DM (s)</label><input type="number" id="setting-chat-cooldown" min="0"></div>
+                </div>
+                <button class="btn-primary" onclick="saveSettings()" style="margin-top:10px;">Update Cooldowns</button>
+            </div>
+            <div class="section-card">
+                <h3 style="color: var(--admin); margin-top:0;">👥 User Management</h3>
+                <table class="data-table">
+                    <thead><tr><th>User</th><th>Status</th><th>Actions</th></tr></thead>
+                    <tbody id="mod-user-list"></tbody>
+                </table>
+            </div>
+            <div class="section-card">
+                <h3 style="color: var(--admin); margin-top:0;">🛡️ Security Audit Log</h3>
+                <div id="mod-log"></div>
+                <button onclick="clearLogs()" class="btn-danger" style="margin-top:15px; width: 100%;">Clear All Logs</button>
+            </div>
+        </div>
+
+        <div id="tab-content-dev" class="hidden">
+            <div class="section-card">
+                <h3 style="color: var(--developer); margin-top:0;">👨‍💻 Dev Dashboard</h3>
+                <div style="background: #181818; padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #333;">
+                    <h4 style="margin:0 0 10px 0;">Create New Account</h4>
+                    <div style="display: flex; gap: 10px;">
+                        <input type="text" id="dev-new-u" placeholder="Username">
+                        <div class="pwd-container">
+                            <input type="password" id="dev-new-p" placeholder="Password">
+                            <button type="button" class="pwd-toggle" onclick="togglePwdVisibility('dev-new-p', this)">👁️</button>
+                        </div>
+                        <button class="btn-primary" style="width:auto;" onclick="devAddAccount()">Create</button>
+                    </div>
+                </div>
+                <table class="data-table">
+                    <thead><tr><th>Username</th><th>Current Rank</th><th>Action</th></tr></thead>
+                    <tbody id="dev-user-list"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div id="auth-overlay" class="overlay hidden">
+        <div class="modal-card">
+            <h3 id="auth-title">Welcome</h3>
+            <div id="auth-msg" style="color: #2ecc71; font-size: 0.9rem; margin-bottom: 15px; text-align:center;" class="hidden"></div>
+            <input type="text" id="username" placeholder="Username">
+            <div class="pwd-container">
+                <input type="password" id="password" placeholder="Password">
+                <button type="button" class="pwd-toggle" onclick="togglePwdVisibility('password', this)">👁️</button>
+            </div>
+            <button class="btn-primary" style="margin-top: 15px;" onclick="processAuth()">Authenticate</button>
+            <button onclick="closeModal('auth-overlay')" style="background:none; border:none; width:100%; margin-top:10px; color:#888; cursor:pointer;">Cancel</button>
+        </div>
+    </div>
+
+    <script>
+        // --- DATA ---
+        let defaultUsers = [ {user:'yescoded', pass:'test123', role:'Developer', status: 'active', punishEnd: 0, history: [], blocked: []} ];
+        let users = JSON.parse(localStorage.getItem('ms_users')) || defaultUsers;
+        users = users.map(u => ({ status: 'active', punishEnd: 0, history: [], blocked: [], ...u }));
+
+        let posts = JSON.parse(localStorage.getItem('ms_posts')) || [];
+        let logs = JSON.parse(localStorage.getItem('ms_logs')) || [];
+        let chats = JSON.parse(localStorage.getItem('ms_chats')) || [];
+        let settings = JSON.parse(localStorage.getItem('ms_settings')) || { postCooldown: 30, replyCooldown: 10, chatCooldown: 5 };
+        
+        // --- PAGINATION & SORT STATE ---
+        let feedState = {}; // Stores { sort: 'new', limit: 3, replyLimits: { commentId: 3 } } per post
+
+        let currentUser = null;
+        let lastPostTime = 0, lastReplyTime = 0, lastChatTime = 0;
+
+        // --- AUTH & UI ---
+        function togglePwdVisibility(inputId, btn) {
+            const input = document.getElementById(inputId);
+            if(input.type === 'password') { input.type = 'text'; btn.style.color = 'var(--primary)'; }
+            else { input.type = 'password'; btn.style.color = 'var(--text-muted)'; }
+        }
+
+        function showAuth(mode) {
+            document.getElementById('auth-overlay').classList.remove('hidden');
+            document.getElementById('auth-title').innerText = mode === 'register' ? 'Join Community' : 'Welcome Back';
+            window.authMode = mode;
+        }
+
+        function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+        
+        function processAuth() {
+            const rawU = document.getElementById('username').value.trim();
+            const lowerU = rawU.toLowerCase();
+            const p = document.getElementById('password').value;
+            if(!rawU || !p) return alert("Fields cannot be empty.");
+            if(window.authMode === 'register') {
+                if(users.find(x => x.user.toLowerCase() === lowerU)) return alert("Username already exists!");
+                users.push({user: rawU, pass: p, role: 'User', status: 'active', punishEnd: 0, history: [], blocked: []});
+                saveData(); alert("Account created! Login to continue.");
+                window.authMode = 'login'; 
+            } else {
+                const found = users.find(x => x.user.toLowerCase() === lowerU && x.pass === p);
+                if(found) { 
+                    checkStatus(found);
+                    if(found.status === 'terminated') return alert("TERMINATED: This account is permanently closed.");
+                    if(found.status === 'banned') return alert(`BANNED: Locked until ${new Date(found.punishEnd).toLocaleString()}`);
+                    currentUser = found; closeModal('auth-overlay'); initSession();
+                } else alert("Incorrect credentials.");
+            }
+        }
+
+        function logout() { currentUser = null; location.reload(); }
+
+        function initSession() {
+            const ctrl = document.getElementById('nav-controls');
+            if(currentUser) {
+                let badgeClass = currentUser.role === 'Developer' ? 'name-dev' : (currentUser.role === 'Admin' ? 'name-admin' : 'name-user');
+                let prefix = currentUser.role === 'Developer' ? '👨‍💻 [Dev] ' : (currentUser.role === 'Admin' ? '🛡️ [Admin] ' : '');
+                ctrl.innerHTML = `<span class="${badgeClass}">${prefix}${currentUser.user}</span> <button onclick="logout()" style="margin-left:15px; background:var(--admin); color:white;">Logout</button>`;
+                document.getElementById('creator-zone').classList.remove('hidden');
+                document.getElementById('tab-controls').classList.remove('hidden');
+                if(currentUser.role === 'Admin' || currentUser.role === 'Developer') {
+                    document.getElementById('tab-mod').classList.remove('hidden');
+                    document.getElementById('setting-cooldown').value = settings.postCooldown;
+                    document.getElementById('setting-reply-cooldown').value = settings.replyCooldown || 10;
+                    document.getElementById('setting-chat-cooldown').value = settings.chatCooldown || 5;
+                }
+                if(currentUser.role === 'Developer') document.getElementById('tab-dev').classList.remove('hidden');
+                populateUserLists();
+            }
+            renderFeed();
+        }
+
+        function switchTab(tabId) {
+            if(!currentUser && tabId !== 'feed') return alert("Please log in first.");
+            document.querySelectorAll('[id^="tab-content-"]').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+            document.getElementById(`tab-content-${tabId}`).classList.remove('hidden');
+            event.target.classList.add('active');
+            if(tabId === 'chat') renderChat();
+            if(tabId === 'dev') renderDevPanel();
+            if(tabId === 'mod') { updateLogDisplay(); renderModPanel(); }
+        }
+
+        function saveSettings() {
+            if(currentUser.role !== 'Admin' && currentUser.role !== 'Developer') return;
+            settings.postCooldown = parseInt(document.getElementById('setting-cooldown').value) || 0;
+            settings.replyCooldown = parseInt(document.getElementById('setting-reply-cooldown').value) || 0;
+            settings.chatCooldown = parseInt(document.getElementById('setting-chat-cooldown').value) || 0;
+            saveData();
+            addLog(`SETTINGS: ${currentUser.user} updated global cooldowns.`);
+            alert("Settings saved.");
+        }
+
+        function isMuted() {
+            if(!currentUser) return false;
+            checkStatus(currentUser);
+            if(currentUser.status === 'muted') { alert(`MUTED: Communication restricted until ${new Date(currentUser.punishEnd).toLocaleString()}.`); return true; }
+            return false;
+        }
+
+        // --- CORE ACTIONS & REACTIONS ---
+        function submitPost() {
+            if(isMuted()) return;
+            const now = Date.now();
+            if(currentUser.role === 'User' && (now - lastPostTime < settings.postCooldown * 1000)) return alert("Wait for the post cooldown.");
+            const text = document.getElementById('post-text').value;
+            if(!text) return;
+            posts.unshift({ id: Date.now(), author: currentUser.user, text, img: document.getElementById('post-img').value, exclusive: document.getElementById('post-excl').checked, comments: [], time: now, likes: [], dislikes: [] });
+            lastPostTime = now; saveData(); renderFeed();
+        }
+
+        function addComment(postId, parentId = null) {
+            if(!currentUser) return showAuth('login');
+            if(isMuted()) return;
+            const now = Date.now();
+            if(currentUser.role === 'User' && (now - lastReplyTime < (settings.replyCooldown || 10) * 1000)) return alert("Wait for the reply cooldown.");
+            const inputId = parentId ? `reply-in-${parentId}` : `cmnt-in-${postId}`;
+            const val = document.getElementById(inputId).value;
+            if(!val) return;
+            const post = posts.find(p => p.id === postId);
+            const newCmnt = { id: Date.now(), author: currentUser.user, text: val, replies: [], time: now, likes: [], dislikes: [] };
+            if(parentId) post.comments.find(c => c.id === parentId).replies.push(newCmnt);
+            else post.comments.push(newCmnt);
+            lastReplyTime = now; saveData(); renderFeed();
+        }
+
+        function toggleReaction(type, postId, commentId, replyId, isLike) {
+            if(!currentUser) return showAuth('login');
+            let target;
+            const post = posts.find(p => p.id === postId);
+            if (type === 'post') target = post;
+            else if (type === 'comment') target = post.comments.find(c => c.id === commentId);
+            else target = post.comments.find(c => c.id === commentId).replies.find(r => r.id === replyId);
+
+            target.likes = target.likes || [];
+            target.dislikes = target.dislikes || [];
+            
+            const u = currentUser.user;
+            if (isLike) {
+                if (target.likes.includes(u)) target.likes = target.likes.filter(x => x !== u);
+                else { target.likes.push(u); target.dislikes = target.dislikes.filter(x => x !== u); }
+            } else {
+                if (target.dislikes.includes(u)) target.dislikes = target.dislikes.filter(x => x !== u);
+                else { target.dislikes.push(u); target.likes = target.likes.filter(x => x !== u); }
+            }
+            saveData(); renderFeed();
+        }
+
+        // --- SORTING & PAGINATION ---
+        function setSortMethod(postId, method) {
+            feedState[postId] = feedState[postId] || { limit: 3, replyLimits: {}, sort: 'new' };
+            feedState[postId].sort = method;
+            renderFeed();
+        }
+
+        function loadMoreComments(postId) {
+            feedState[postId].limit += 5;
+            renderFeed();
+        }
+
+        function loadMoreReplies(postId, commentId) {
+            feedState[postId].replyLimits[commentId] = (feedState[postId].replyLimits[commentId] || 3) + 5;
+            renderFeed();
+        }
+
+        function sortItems(arr, method) {
+            let sorted = [...arr];
+            sorted.forEach(item => { item.time = item.time || 0; item.likes = item.likes || []; item.dislikes = item.dislikes || []; });
+            if (method === 'new') sorted.sort((a, b) => b.time - a.time);
+            else if (method === 'old') sorted.sort((a, b) => a.time - b.time);
+            else if (method === 'liked') sorted.sort((a, b) => (b.likes.length - b.dislikes.length) - (a.likes.length - a.dislikes.length));
+            return sorted;
+        }
+
+        // --- CHAT & BLOCKS ---
+        function toggleBlockUser() {
+            const target = document.getElementById('chat-user-select').value;
+            if(!target) return;
+            if(currentUser.blocked.includes(target)) currentUser.blocked = currentUser.blocked.filter(u => u !== target);
+            else currentUser.blocked.push(target);
+            saveData(); renderChat();
+        }
+
+        function sendChatMessage() {
+            if(isMuted()) return;
+            const to = document.getElementById('chat-user-select').value;
+            const text = document.getElementById('chat-input').value;
+            const img = document.getElementById('chat-img').value;
+            if(!to || (!text && !img)) return;
+            const target = users.find(u => u.user === to);
+            if(target?.blocked.includes(currentUser.user)) return alert("You cannot message this user.");
+
+            const now = Date.now();
+            if(currentUser.role === 'User' && (now - lastChatTime < (settings.chatCooldown || 5) * 1000)) return alert("DM cooldown active.");
+            chats.push({ from: currentUser.user, to, text, img, time: now, id: Date.now() });
+            document.getElementById('chat-input').value = ''; document.getElementById('chat-img').value = '';
+            lastChatTime = now; saveData(); renderChat();
+        }
+
+        function renderChat() {
+            const to = document.getElementById('chat-user-select').value;
+            const box = document.getElementById('chat-messages');
+            const bBtn = document.getElementById('block-btn');
+            if(!to) { box.innerHTML = `<p style="text-align:center; color:#666; margin-top:40%;">Select a user.</p>`; bBtn.classList.add('hidden'); return; }
+            bBtn.classList.remove('hidden'); bBtn.innerText = currentUser.blocked.includes(to) ? 'Unblock User' : 'Block User';
+
+            const history = chats.filter(c => (c.from === currentUser.user && c.to === to) || (c.from === to && c.to === currentUser.user));
+            box.innerHTML = history.map(c => {
+                const isMine = c.from === currentUser.user;
+                const imgHtml = c.img ? `<img src="${c.img}" class="chat-img">` : '';
+                const reportIcon = !isMine ? `<span class="action-icon" onclick="reportEntity('chat', '${c.id}')">🚩</span>` : '';
+                return `<div class="clearfix"><div class="chat-msg ${isMine?'msg-mine':'msg-theirs'}">${imgHtml}${c.text} ${reportIcon}</div></div>`;
+            }).join('');
+            box.scrollTop = box.scrollHeight;
+        }
+
+        // --- DEV CONTROLS ---
+        function devAddAccount() {
+            const u = document.getElementById('dev-new-u').value.trim();
+            const p = document.getElementById('dev-new-p').value.trim();
+            if(!u || !p) return;
+            if(users.find(x => x.user.toLowerCase() === u.toLowerCase())) return alert("User exists.");
+            users.push({user: u, pass: p, role: 'User', status: 'active', punishEnd: 0, history: [], blocked: []});
+            saveData(); renderDevPanel(); populateUserLists();
+        }
+
+        function devEraseAccount(u) {
+            if(u === currentUser.user) return alert("Cannot delete self.");
+            if(!confirm(`Erase ${u}?`)) return;
+            users = users.filter(x => x.user !== u);
+            saveData(); renderDevPanel(); populateUserLists();
+            addLog(`DEV: ${currentUser.user} ERASED account ${u}`, false, true);
+        }
+
+        function renderDevPanel() {
+            const tbody = document.getElementById('dev-user-list');
+            tbody.innerHTML = users.map(u => `
+                <tr>
+                    <td><strong>${u.user}</strong></td>
+                    <td><select onchange="changeRole('${u.user}', this.value)" ${u.user === currentUser.user ? 'disabled' : ''}>
+                        <option value="User" ${u.role === 'User' ? 'selected' : ''}>User</option>
+                        <option value="Admin" ${u.role === 'Admin' ? 'selected' : ''}>Admin</option>
+                        <option value="Developer" ${u.role === 'Developer' ? 'selected' : ''}>Developer</option>
+                    </select></td>
+                    <td>${u.user !== currentUser.user ? `<button class="btn-danger" onclick="devEraseAccount('${u.user}')">Erase</button>` : '(You)'}</td>
+                </tr>
+            `).join('');
+        }
+
+        // --- HELPERS ---
+        function checkStatus(u) { if(u.punishEnd > 0 && Date.now() > u.punishEnd && u.status !== 'terminated') { u.status = 'active'; u.punishEnd = 0; saveData(); } }
+        function addLog(msg, isReport=false, isDanger=false) { logs.unshift({ time: new Date().toLocaleTimeString(), msg, isReport, isDanger }); saveData(); updateLogDisplay(); }
+        function updateLogDisplay() { const b = document.getElementById('mod-log'); if(b) b.innerHTML = logs.map(l => `<div class="${l.isReport?'log-report':(l.isDanger?'log-danger':'')}">[${l.time}] ${l.msg}</div>`).join(''); }
+        function clearLogs() { logs = []; saveData(); updateLogDisplay(); }
+        function saveData() { localStorage.setItem('ms_users', JSON.stringify(users)); localStorage.setItem('ms_posts', JSON.stringify(posts)); localStorage.setItem('ms_logs', JSON.stringify(logs)); localStorage.setItem('ms_chats', JSON.stringify(chats)); localStorage.setItem('ms_settings', JSON.stringify(settings)); }
+        function populateUserLists() { const s = document.getElementById('chat-user-select'); s.innerHTML = '<option value="">Select a user...</option>'; users.forEach(u => { if(u.user !== currentUser.user) s.innerHTML += `<option value="${u.user}">${u.user} (${u.role})</option>`; }); }
+        function toggleReply(cid) { document.getElementById(`reply-box-${cid}`).classList.toggle('hidden'); }
+        function reportEntity(type, id) { addLog(`REPORT: 🚩 [${currentUser.user}] flagged ${type} ID: ${id}`, true); alert("Reported to staff."); }
+        function changeRole(u, r) { if(currentUser.role !== 'Developer') return; users.find(x => x.user === u).role = r; saveData(); renderFeed(); addLog(`PROMOTION: ${u} is now ${r}`); }
+        
+        function getNameHTML(author) {
+            let uData = users.find(u => u.user === author);
+            let role = uData ? uData.role : 'User'; // Fallback to User if account deleted
+            let cls = role === 'Developer' ? 'name-dev' : (role === 'Admin' ? 'name-admin' : 'name-user');
+            let prefix = role === 'Developer' ? '👨‍💻 ' : (role === 'Admin' ? '🛡️ ' : '');
+            let badged = (uData && uData.status !== 'active') ? `<span class="status-badge status-${uData.status}">${uData.status.toUpperCase()}</span>` : '';
+            let report = (currentUser && currentUser.user !== author) ? `<span class="action-icon" title="Report" onclick="reportEntity('user', '${author}')">🚩</span>` : '';
+            return `<span class="${cls}">${prefix}${author}</span>${badged}${report}`;
+        }
+
+        function renderReactions(type, pId, cId=null, rId=null, itemData) {
+            let l = itemData.likes || []; let d = itemData.dislikes || [];
+            let isL = currentUser && l.includes(currentUser.user); let isD = currentUser && d.includes(currentUser.user);
+            return `
+            <div class="reaction-bar">
+                <button class="react-btn ${isL ? 'active-like' : ''}" onclick="toggleReaction('${type}', ${pId}, ${cId}, ${rId}, true)">👍 ${l.length}</button>
+                <button class="react-btn ${isD ? 'active-dislike' : ''}" onclick="toggleReaction('${type}', ${pId}, ${cId}, ${rId}, false)">👎 ${d.length}</button>
+            </div>`;
+        }
+
+        function renderFeed() {
+            const feed = document.getElementById('feed');
+            feed.innerHTML = '';
+            if(posts.length === 0) { feed.innerHTML = `<div class="section-card" style="text-align:center;">No posts yet.</div>`; return; }
+            
+            posts.forEach(p => {
+                feedState[p.id] = feedState[p.id] || { limit: 3, replyLimits: {}, sort: 'new' };
+                let state = feedState[p.id];
+                
+                const canSee = !p.exclusive || currentUser;
+                const postDiv = document.createElement('div'); postDiv.className = 'post';
+                
+                let html = `<div class="post-header"><div>${getNameHTML(p.author)} <small>${new Date(p.time).toLocaleTimeString()}</small></div>${currentUser && currentUser.user !== p.author ? `<button class="btn-report" onclick="reportEntity('post', ${p.id})">Report</button>` : ''}</div>`;
+                
+                if(!canSee) { html += `<div style="text-align:center; padding:20px;">🔒 Log in to view</div>`; }
+                else {
+                    html += `<div class="post-content">${p.text}</div>${p.img ? `<img src="${p.img}">`:''}`;
+                    html += renderReactions('post', p.id, null, null, p);
+                    
+                    html += `<div class="comment-section">`;
+                    if(p.comments.length > 0) {
+                        html += `
+                        <div style="display:flex; justify-content:space-between; margin-bottom: 10px;">
+                            <strong>Comments (${p.comments.length})</strong>
+                            <select class="sort-select" onchange="setSortMethod(${p.id}, this.value)">
+                                <option value="new" ${state.sort==='new'?'selected':''}>Sort: Newest</option>
+                                <option value="old" ${state.sort==='old'?'selected':''}>Sort: Oldest</option>
+                                <option value="liked" ${state.sort==='liked'?'selected':''}>Sort: Most Liked</option>
+                            </select>
+                        </div>`;
+                    }
+                    
+                    let sortedComments = sortItems(p.comments, state.sort);
+                    let visibleComments = sortedComments.slice(0, state.limit);
+
+                    visibleComments.forEach(c => {
+                        html += `<div class="comment">
+                            <div><strong>${getNameHTML(c.author)}:</strong> ${c.text} ${currentUser?`<span class="reply-link" onclick="toggleReply('${c.id}')">Reply</span>`:''} ${(currentUser?.role==='Admin'||currentUser?.role==='Developer')?`<span class="action-icon" onclick="adminDelete('comment', ${p.id}, ${c.id})">🗑️</span>`:''}</div>
+                            ${renderReactions('comment', p.id, c.id, null, c)}
+                            <div id="reply-box-${c.id}" class="hidden" style="display:flex; gap:5px; margin-top:8px;"><input id="reply-in-${c.id}"><button class="btn-primary" style="width:auto;" onclick="addComment(${p.id}, ${c.id})">Send</button></div>`;
+                        
+                        let rLimit = state.replyLimits[c.id] || 3;
+                        let sortedReplies = sortItems(c.replies, 'new'); // Default replies to newest
+                        let visibleReplies = sortedReplies.slice(0, rLimit);
+
+                        visibleReplies.forEach(r => { 
+                            html += `<div class="reply">
+                                <div><strong>${getNameHTML(r.author)}:</strong> ${r.text} ${(currentUser?.role==='Admin'||currentUser?.role==='Developer')?`<span class="action-icon" onclick="adminDelete('comment', ${p.id}, ${c.id}, ${r.id})">🗑️</span>`:''}</div>
+                                ${renderReactions('reply', p.id, c.id, r.id, r)}
+                            </div>`; 
+                        });
+                        
+                        if(sortedReplies.length > rLimit) html += `<button class="show-more-btn" style="margin-left: 25px;" onclick="loadMoreReplies(${p.id}, ${c.id})">Show more replies...</button>`;
+                        html += `</div>`;
+                    });
+
+                    if(sortedComments.length > state.limit) html += `<button class="show-more-btn" onclick="loadMoreComments(${p.id})">Show more comments...</button>`;
+                    
+                    if(currentUser) html += `<div style="display:flex; gap:10px; margin-top:10px;"><input id="cmnt-in-${p.id}"><button class="btn-primary" style="width:auto;" onclick="addComment(${p.id})">Post</button></div>`;
+                    html += `</div>`;
+                }
+
+                // Admins delete everything except Dev posts. Devs delete everything.
+                let uData = users.find(u => u.user === p.author);
+                let pRole = uData ? uData.role : 'User';
+                if((currentUser?.role==='Admin'||currentUser?.role==='Developer') && !(currentUser.role==='Admin'&&pRole==='Developer')) html += `<button class="btn-danger" style="width:100%; margin-top:10px;" onclick="adminDelete('post', ${p.id})">DELETE POST</button>`;
+                
+                postDiv.innerHTML = html; feed.appendChild(postDiv);
+            });
+        }
+
+        function adminDelete(type, postId, commentId = null, replyId = null) {
+            const post = posts.find(p => p.id === postId);
+            let uData = users.find(u => u.user === post.author);
+            let pRole = uData ? uData.role : 'User';
+            if(!post || (currentUser.role === 'Admin' && pRole === 'Developer')) return alert("Permission Denied.");
+            if(type === 'post') posts = posts.filter(p => p.id !== postId);
+            else if(replyId) { const cmnt = post.comments.find(c => c.id === commentId); cmnt.replies = cmnt.replies.filter(r => r.id !== replyId); }
+            else post.comments = post.comments.filter(c => c.id !== commentId);
+            saveData(); renderFeed();
+        }
+
+        // --- MOD PANEL ---
+        function renderModPanel() {
+            const tbody = document.getElementById('mod-user-list');
+            tbody.innerHTML = users.map(u => {
+                let canMod = currentUser.role === 'Developer' || (currentUser.role === 'Admin' && u.role === 'User');
+                return `<tr>
+                    <td><strong>${u.user}</strong></td>
+                    <td>${u.status}</td>
+                    <td>
+                        ${canMod ? `
+                            <input type="number" id="dur-${u.user}" value="1" style="width:50px; display:inline-block; padding: 6px; margin: 0 5px 0 0;">
+                            <select id="unit-${u.user}" style="width:auto; display:inline-block; padding: 6px; margin: 0 5px 0 0;">
+                                <option value="1000">Secs</option>
+                                <option value="60000">Mins</option>
+                                <option value="3600000" selected>Hrs</option>
+                                <option value="86400000">Days</option>
+                            </select>
+                            <button class="btn-warn" onclick="modAction('${u.user}','mute')">Mute</button>
+                            <button class="btn-danger" onclick="modAction('${u.user}','ban')">Ban</button>
+                            <button class="btn-success" onclick="modAction('${u.user}','active')">Clear</button>
+                        ` : 'Restricted'}
+                    </td>
+                </tr>`;
+            }).join('');
+        }
+
+        function modAction(u, act) {
+            let target = users.find(x => x.user === u);
+            if (act === 'active') { target.status = 'active'; target.punishEnd = 0; } 
+            else {
+                const duration = parseInt(document.getElementById(`dur-${u}`).value) || 1;
+                const unit = parseInt(document.getElementById(`unit-${u}`).value) || 3600000;
+                target.status = act === 'mute' ? 'muted' : 'banned'; target.punishEnd = Date.now() + (duration * unit);
+            }
+            saveData(); renderModPanel(); addLog(`MOD: ${currentUser?.user || 'System'} set ${u} to ${target.status}.`);
+        }
+
+        window.onload = renderFeed;
+    </script>
+</body>
+</html>
